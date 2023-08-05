@@ -1,0 +1,21 @@
+error: "string" attribute must be a string literal
+ --> tests/ui/non_string_literal.rs:6:10
+  |
+6 | #[derive(SerializeLabeledStringEnum, DeserializeLabeledStringEnum)]
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `SerializeLabeledStringEnum` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: "string" attribute must be a string literal
+ --> tests/ui/non_string_literal.rs:6:38
+  |
+6 | #[derive(SerializeLabeledStringEnum, DeserializeLabeledStringEnum)]
+  |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `DeserializeLabeledStringEnum` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unexpected expression: `Fire`
+  --> tests/ui/non_string_literal.rs:10:16
+   |
+10 |     #[string = Fire]
+   |                ^^^^
