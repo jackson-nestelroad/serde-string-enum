@@ -1,5 +1,10 @@
 # serde_string_enum
 
+[![Latest Version]][crates.io]
+
+[Latest Version]: https://img.shields.io/crates/v/serde_string_enum.svg
+[crates.io]: https://crates.io/crates/serde_string_enum
+
 This crate provides a procedural macro to automatically derive [serde](https://serde.rs/)'s `Serialize` and `Deserialize` traits for enum types that should be encoded as a single string.
 
 ```toml
