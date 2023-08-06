@@ -12,7 +12,7 @@ unicase = "2.6.0"
 This crate defines two pairs of macros:
 
 - `SerializeLabeledStringEnum` / `DeserializeLabeledStringEnum` - Uses the `#[string = ...]` attribute on each enum variant to perform string conversions.
-- `SerializeStringEnum` / `DeserializeStringEnum`  - Uses the enum type's `ToString` and `FromStr` implementations to perform string conversions.
+- `SerializeStringEnum` / `DeserializeStringEnum`  - Uses the enum type's `Display` and `FromStr` implementations to perform string conversions.
 
 ## Examples:
 ### Labeled Strings
