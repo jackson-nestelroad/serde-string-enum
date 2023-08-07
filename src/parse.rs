@@ -1,4 +1,7 @@
-use alloc::vec::Vec;
+use alloc::{
+    fmt::format,
+    vec::Vec,
+};
 use proc_macro2::{
     Ident,
     Span,
@@ -17,16 +20,21 @@ use syn::{
     Lit,
     LitStr,
     Meta,
+    MetaNameValue,
 };
 
 #[derive(Clone)]
 pub struct VariantAttrs {
     pub string: Option<LitStr>,
+    pub aliases: Vec<LitStr>,
 }
 
 impl VariantAttrs {
     pub fn new() -> Self {
-        Self { string: None }
+        Self {
+            string: None,
+            aliases: Vec::new(),
+        }
     }
 }
 
@@ -47,28 +55,42 @@ pub struct LabeledStringInput {
     pub variants: Vec<Variant>,
 }
 
+fn get_string_literal_from_name_value_attr(
+    span: Span,
+    attribute_name: &str,
+    name_value: &MetaNameValue,
+) -> Result<LitStr> {
+    match &name_value.value {
+        Expr::Lit(expr_lit) => match &expr_lit.lit {
+            Lit::Str(str) => Ok(str.clone()),
+            _ => Err(Error::new(
+                span,
+                format(format_args!(
+                    "\"{attribute_name}\" attribute must be a string literal"
+                )),
+            )),
+        },
+        _ => Err(Error::new(
+            span,
+            format(format_args!(
+                "\"{attribute_name}\" attribute must be a string literal"
+            )),
+        )),
+    }
+}
+
 fn parse_variant_attrs(span: Span, variant: &syn::Variant) -> Result<VariantAttrs> {
     let mut attrs = VariantAttrs::new();
     for attr in &variant.attrs {
         if let Meta::NameValue(name_value) = &attr.meta {
             if name_value.path.is_ident("string") {
-                attrs.string = match &name_value.value {
-                    Expr::Lit(expr_lit) => match &expr_lit.lit {
-                        Lit::Str(str) => Some(str.clone()),
-                        _ => {
-                            return Err(Error::new(
-                                span,
-                                "\"string\" attribute must be a string literal",
-                            ))
-                        }
-                    },
-                    _ => {
-                        return Err(Error::new(
-                            span,
-                            "\"string\" attribute must be a string literal",
-                        ))
-                    }
-                }
+                attrs.string = Some(get_string_literal_from_name_value_attr(
+                    span, "string", name_value,
+                )?)
+            } else if name_value.path.is_ident("alias") {
+                attrs.aliases.push(get_string_literal_from_name_value_attr(
+                    span, "alias", name_value,
+                )?)
             }
         }
     }

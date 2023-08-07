@@ -1,3 +1,9 @@
+// Write tests for no_std to test that our library is actually generated no_std-compatible code.
+#![no_std]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 #[cfg(test)]
 mod labeled_strings {
     use core::str::FromStr;
@@ -9,15 +15,32 @@ mod labeled_strings {
     #[derive(Debug, PartialEq, SerializeLabeledStringEnum, DeserializeLabeledStringEnum)]
     enum Type {
         #[string = "Grass"]
+        #[alias = "Leaf"]
         Grass,
         #[string = "Fire"]
+        #[alias = "Flame"]
+        #[alias = "Hot"]
         Fire,
         #[string = "Water"]
         Water,
     }
 
     #[test]
+    fn derives_display() {
+        extern crate alloc;
+        use alloc::fmt::format;
+
+        assert_eq!(format(format_args!("{}", Type::Grass)), "Grass");
+        assert_eq!(format(format_args!("{}", Type::Fire)), "Fire");
+        assert_eq!(format(format_args!("{}", Type::Water)), "Water");
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
     fn derives_to_string() {
+        extern crate std;
+        use std::string::ToString;
+
         assert_eq!(Type::Grass.to_string(), "Grass");
         assert_eq!(Type::Fire.to_string(), "Fire");
         assert_eq!(Type::Water.to_string(), "Water");
@@ -25,6 +48,9 @@ mod labeled_strings {
 
     #[test]
     fn derives_serialize() {
+        extern crate alloc;
+        use alloc::vec;
+
         assert_eq!(serde_json::to_string(&Type::Grass).unwrap(), "\"Grass\"");
         assert_eq!(serde_json::to_string(&Type::Fire).unwrap(), "\"Fire\"");
         assert_eq!(serde_json::to_string(&Type::Water).unwrap(), "\"Water\"");
@@ -45,6 +71,12 @@ mod labeled_strings {
 
     #[test]
     fn derives_deserialize() {
+        extern crate alloc;
+        use alloc::{
+            vec,
+            vec::Vec,
+        };
+
         assert_eq!(
             serde_json::from_str::<Type>("\"Grass\"").unwrap(),
             Type::Grass
@@ -65,6 +97,7 @@ mod labeled_strings {
     }
 
     #[test]
+    #[cfg(feature = "unicase")]
     fn from_str_case_insensitive() {
         assert_eq!(Type::from_str("grass").unwrap(), Type::Grass);
         assert_eq!(Type::from_str("FIRE").unwrap(), Type::Fire);
@@ -72,7 +105,14 @@ mod labeled_strings {
     }
 
     #[test]
+    #[cfg(feature = "unicase")]
     fn deserialize_case_insensitive() {
+        extern crate alloc;
+        use alloc::{
+            vec,
+            vec::Vec,
+        };
+
         assert_eq!(
             serde_json::from_str::<Type>("\"grass\"").unwrap(),
             Type::Grass
@@ -90,6 +130,66 @@ mod labeled_strings {
             serde_json::from_str::<Vec<Type>>("[\"grass\",\"fire\",\"WATER\"]").unwrap(),
             vec![Type::Grass, Type::Fire, Type::Water],
         );
+    }
+
+    #[test]
+    fn from_str_aliases() {
+        assert_eq!(Type::from_str("Leaf").unwrap(), Type::Grass);
+        assert_eq!(Type::from_str("Flame").unwrap(), Type::Fire);
+        assert_eq!(Type::from_str("Hot").unwrap(), Type::Fire);
+    }
+
+    #[test]
+    #[cfg(feature = "unicase")]
+    fn from_str_aliases_case_insensitive() {
+        assert_eq!(Type::from_str("LEAF").unwrap(), Type::Grass);
+        assert_eq!(Type::from_str("flame").unwrap(), Type::Fire);
+        assert_eq!(Type::from_str("HOt").unwrap(), Type::Fire);
+    }
+
+    #[test]
+    fn deserializes_aliases() {
+        assert_eq!(
+            serde_json::from_str::<Type>("\"Leaf\"").unwrap(),
+            Type::Grass
+        );
+        assert_eq!(
+            serde_json::from_str::<Type>("\"Flame\"").unwrap(),
+            Type::Fire
+        );
+        assert_eq!(serde_json::from_str::<Type>("\"Hot\"").unwrap(), Type::Fire);
+    }
+
+    #[test]
+    #[cfg(feature = "unicase")]
+    fn deserializes_aliases_case_insensitive() {
+        assert_eq!(
+            serde_json::from_str::<Type>("\"leAF\"").unwrap(),
+            Type::Grass
+        );
+        assert_eq!(
+            serde_json::from_str::<Type>("\"FLamE\"").unwrap(),
+            Type::Fire
+        );
+        assert_eq!(serde_json::from_str::<Type>("\"hot\"").unwrap(), Type::Fire);
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn invalid_value_string() {
+        extern crate alloc;
+        use alloc::string::String;
+
+        assert_eq!(
+            Type::from_str("bad").err(),
+            Some(String::from("invalid Type: bad"))
+        )
+    }
+
+    #[test]
+    #[cfg(not(feature = "alloc"))]
+    fn invalid_value_string() {
+        assert_eq!(Type::from_str("bad").err(), Some("invalid value"))
     }
 }
 
@@ -124,12 +224,12 @@ mod custom_string_conversion {
     }
 
     impl FromStr for Rotation {
-        type Err = String;
+        type Err = &'static str;
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             Ok(match s {
                 "L" => Self::Left,
                 "R" => Self::Right,
-                _ => return Err(format!("invalid rotation {s}")),
+                _ => return Err("invalid rotation"),
             })
         }
     }
@@ -152,19 +252,22 @@ mod custom_string_conversion {
     }
 
     impl FromStr for Move {
-        type Err = String;
+        type Err = &'static str;
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             Ok(match &s[0..1] {
                 "S" => Self::Stay,
-                "F" => Self::Forward(s[1..].parse::<u8>().map_err(|err| err.to_string())?),
+                "F" => Self::Forward(s[1..].parse::<u8>().map_err(|_| "invalid forward number")?),
                 "R" => Self::Rotate(Rotation::from_str(&s[1..])?),
-                _ => return Err(format!("invalid move {s}")),
+                _ => return Err("invalid move"),
             })
         }
     }
 
     #[test]
     fn derives_serialize() {
+        extern crate alloc;
+        use alloc::vec;
+
         assert_eq!(serde_json::to_string(&Move::Stay).unwrap(), "\"S\"");
         assert_eq!(serde_json::to_string(&Move::Forward(1)).unwrap(), "\"F1\"");
         assert_eq!(
@@ -186,6 +289,12 @@ mod custom_string_conversion {
 
     #[test]
     fn derives_deserialize() {
+        extern crate alloc;
+        use alloc::{
+            vec,
+            vec::Vec,
+        };
+
         assert_eq!(serde_json::from_str::<Move>("\"S\"").unwrap(), Move::Stay);
         assert_eq!(
             serde_json::from_str::<Move>("\"F123\"").unwrap(),
