@@ -19,9 +19,18 @@ This crate defines two pairs of macros:
 - `SerializeLabeledStringEnum` / `DeserializeLabeledStringEnum` - Uses the `#[string = ...]` attribute on each enum variant to perform string conversions.
 - `SerializeStringEnum` / `DeserializeStringEnum`  - Uses the enum type's `Display` and `FromStr` implementations to perform string conversions.
 
+## Features
+- `default` - `std`, `unicase`
+- `std` - Depend on the Rust standard library.
+- `alloc` - Depend on the alloc library without the Rust standard library.
+- `unicase` - Depend on the unicase crate for Unicode-insensitive matching. 
+
 ## Examples:
 ### Labeled Strings
 ```
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 use serde_string_enum::{
     DeserializeLabeledStringEnum,
     SerializeLabeledStringEnum,
@@ -32,6 +41,7 @@ enum Type {
     #[string = "Grass"]
     Grass,
     #[string = "Fire"]
+    #[alias = "Flame"]
     Fire,
     #[string = "Water"]
     Water,
@@ -43,9 +53,15 @@ fn main() -> serde_json::Result<()> {
     let t: Type = serde_json::from_str(&j)?;
     assert_eq!(t, Type::Grass);
 
-    // Case-insensitive conversion also works.
-    let t: Type = serde_json::from_str("\"fire\"")?;
+    // Alias strings.
+    let t: Type = serde_json::from_str("\"Flame\"")?;
     assert_eq!(t, Type::Fire);
+
+    // Case-insensitive conversion also works.
+    if cfg!(feature = "unicase") {
+        let t: Type = serde_json::from_str("\"water\"")?;
+        assert_eq!(t, Type::Water);
+    }
 
     Ok(())
 }
