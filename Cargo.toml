@@ -1,6 +1,6 @@
 [package]
 name = "serde_string_enum"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Procedural macros for serde serialization and deserialization of string-encoded enums."
 authors = ["Jackson Nestelroad <jackson@nestelroad.com>"]
@@ -12,6 +12,7 @@ documentation = "https://docs.rs/serde_string_enum"
 readme = "README.md"
 exclude = [
     ".vscode",
+    "scripts",
 ]
 
 [lib]
