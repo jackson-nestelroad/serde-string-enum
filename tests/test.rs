@@ -1,6 +1,9 @@
 // Write tests for no_std to test that our library is actually generated no_std-compatible code.
 #![no_std]
 
+#[cfg(feature = "std")]
+extern crate std;
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
@@ -175,7 +178,7 @@ mod labeled_strings {
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn invalid_value_string() {
         extern crate alloc;
         use alloc::string::String;
@@ -187,7 +190,7 @@ mod labeled_strings {
     }
 
     #[test]
-    #[cfg(not(feature = "alloc"))]
+    #[cfg(not(any(feature = "std", feature = "alloc")))]
     fn invalid_value_string() {
         assert_eq!(Type::from_str("bad").err(), Some("invalid value"))
     }

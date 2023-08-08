@@ -253,7 +253,11 @@ pub fn derive_labeled_deserialize(input: TokenStream) -> TokenStream {
         }
     });
 
-    let error_type = if cfg!(feature = "alloc") {
+    let error_type = if cfg!(feature = "std") {
+        quote! {
+            std::string::String
+        }
+    } else if cfg!(feature = "alloc") {
         quote! {
             alloc::string::String
         }
@@ -263,7 +267,11 @@ pub fn derive_labeled_deserialize(input: TokenStream) -> TokenStream {
         }
     };
 
-    let error = if cfg!(feature = "alloc") {
+    let error = if cfg!(feature = "std") {
+        quote! {
+            std::format!("invalid {}: {}", stringify!(#ident), #input_ident)
+        }
+    } else if cfg!(feature = "alloc") {
         quote! {
             alloc::fmt::format(format_args!("invalid {}: {}", stringify!(#ident), #input_ident))
         }
