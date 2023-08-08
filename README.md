@@ -10,7 +10,7 @@ This crate provides a procedural macro to automatically derive [serde](https://s
 ```toml
 [dependencies]
 serde = "1.0"
-serde_string_enum = "0.1"
+serde_string_enum = "0.2"
 unicase = "2.6.0"
 ```
 ## Usage
